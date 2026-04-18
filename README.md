@@ -130,10 +130,29 @@ Backend includes:
 
 - Unit tests for auth/todo services
 - Integration tests for API flows using `pg-mem`
+- Test runner: `Vitest`
 
 Frontend includes component/UI tests with Vitest.
 
 Mobile includes screen/utils tests with Jest + `jest-expo`.
+
+## Troubleshooting
+
+- API container restart loop with SQL error near `﻿CREATE`:
+  - Cause: UTF BOM in `backend/sql/001_init.sql`
+  - Fix: rewrite SQL file without BOM and restart API service.
+- Tooling parse error on `package.json` with `Unexpected token '﻿'`:
+  - Cause: UTF BOM in JSON file
+  - Fix: rewrite JSON files in BOM-free encoding.
+- Frontend build/test type conflicts between Vite and Vitest:
+  - Fix: keep separate `vite.config.ts` and `vitest.config.ts`.
+
+## Detailed Logs
+
+Implementation and validation logs are tracked in:
+
+- `.github/logs/README.md` (index)
+- `.github/logs/2026-04-18-master-retrospective.md` (full retrospective)
 
 ## Stop Stacks
 
