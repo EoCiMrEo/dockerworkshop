@@ -1,0 +1,356 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&display=swap');
+
+:root {
+  --bg-deep: #07151f;
+  --bg-mid: #103043;
+  --bg-surface: rgba(17, 43, 60, 0.75);
+  --bg-card: rgba(11, 27, 39, 0.8);
+  --line: rgba(172, 220, 255, 0.25);
+  --text-strong: #f4fbff;
+  --text-muted: #9dc3d7;
+  --accent: #58e6b0;
+  --accent-soft: rgba(88, 230, 176, 0.2);
+  --danger: #ff6f79;
+  --warning: #f8bb4f;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  color: var(--text-strong);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(88, 230, 176, 0.22), transparent 40%),
+    radial-gradient(circle at 85% 10%, rgba(112, 194, 247, 0.22), transparent 40%),
+    linear-gradient(140deg, var(--bg-deep), var(--bg-mid));
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Fraunces', serif;
+  margin: 0;
+}
+
+.auth-shell,
+.dashboard-shell {
+  width: min(1120px, calc(100vw - 2.2rem));
+  margin: 2rem auto;
+  animation: rise 0.4s ease-out;
+}
+
+.auth-card,
+.dashboard-shell {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 25px 75px rgba(4, 10, 14, 0.45);
+}
+
+.auth-card {
+  margin-inline: auto;
+  width: min(480px, 100%);
+  padding: 2rem;
+}
+
+.auth-card p {
+  margin-top: 0.6rem;
+  color: var(--text-muted);
+}
+
+.auth-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.auth-toggle button {
+  border: none;
+  padding: 0.7rem;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.auth-toggle button.is-active {
+  background: rgba(112, 194, 247, 0.25);
+  color: var(--text-strong);
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1.5rem;
+}
+
+input,
+textarea,
+select {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.85rem;
+  color: var(--text-strong);
+  background: var(--bg-surface);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid rgba(88, 230, 176, 0.35);
+  border-color: rgba(88, 230, 176, 0.75);
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  color: #052417;
+  background: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(88, 230, 176, 0.25);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+button.ghost {
+  border-color: var(--line);
+  color: var(--text-strong);
+  background: transparent;
+}
+
+button.danger {
+  color: #fff;
+  background: rgba(255, 111, 121, 0.2);
+  border-color: rgba(255, 111, 121, 0.6);
+}
+
+.dashboard-shell {
+  padding: 1.5rem;
+}
+
+.dashboard-shell header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dashboard-shell header p {
+  color: var(--text-muted);
+  margin: 0.3rem 0 0;
+}
+
+.stats-row {
+  margin-top: 1.2rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.stats-row article {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.8rem;
+  background: rgba(8, 22, 32, 0.6);
+}
+
+.stats-row span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.stats-row strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1.4rem;
+}
+
+.todo-composer,
+.todo-filters {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+  background: rgba(10, 27, 38, 0.75);
+}
+
+.composer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.7rem;
+}
+
+.composer-row-secondary {
+  margin-top: 0.7rem;
+  grid-template-columns: 2fr 1fr 1fr;
+}
+
+.todo-filters {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.todo-list {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.todo-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.8rem;
+  background: rgba(7, 20, 28, 0.75);
+  display: grid;
+  gap: 0.8rem;
+}
+
+.todo-item.is-completed h3 {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.todo-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.todo-content p {
+  margin: 0.45rem 0;
+  color: var(--text-muted);
+}
+
+.todo-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.priority-pill {
+  text-transform: capitalize;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  border: 1px solid transparent;
+}
+
+.priority-low {
+  border-color: rgba(88, 230, 176, 0.45);
+  background: rgba(88, 230, 176, 0.15);
+}
+
+.priority-medium {
+  border-color: rgba(248, 187, 79, 0.55);
+  background: rgba(248, 187, 79, 0.15);
+}
+
+.priority-high {
+  border-color: rgba(255, 111, 121, 0.6);
+  background: rgba(255, 111, 121, 0.2);
+}
+
+.todo-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.todo-edit-form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.todo-edit-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.error-banner,
+.loading,
+.empty-state {
+  margin-top: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.7rem;
+}
+
+.error-banner {
+  color: #ffd4d8;
+  border-color: rgba(255, 111, 121, 0.6);
+  background: rgba(255, 111, 121, 0.16);
+}
+
+.loading,
+.empty-state {
+  color: var(--text-muted);
+  background: rgba(10, 27, 38, 0.55);
+}
+
+@media (max-width: 900px) {
+  .stats-row,
+  .composer-row-secondary,
+  .todo-filters,
+  .todo-edit-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .composer-row {
+    grid-template-columns: 1fr;
+  }
+
+  .todo-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

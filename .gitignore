@@ -1,0 +1,17 @@
+﻿node_modules/
+**/node_modules/
+**/dist/
+**/.expo/
+**/.expo-shared/
+**/coverage/
+**/.turbo/
+**/.DS_Store
+**/*.log
+.env
+.env.*
+!.env.example
+backend/.tmp/
+frontend/.tmp/
+mobile/.tmp/
+.vscode/
+.idea/

@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "ImmersiveTodoMobile",
+    "slug": "immersive-todo-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.local.immersivetodo"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
+

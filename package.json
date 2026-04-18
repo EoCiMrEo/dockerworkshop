@@ -1,0 +1,22 @@
+{
+  "name": "docker-workshop-todo-platform",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "backend",
+    "frontend",
+    "mobile"
+  ],
+  "scripts": {
+    "networks:create:ps": "powershell -ExecutionPolicy Bypass -File ./scripts/create-docker-networks.ps1",
+    "networks:create:sh": "bash ./scripts/create-docker-networks.sh",
+    "backend:up": "docker compose -f docker-compose.backend.yml up -d",
+    "backend:down": "docker compose -f docker-compose.backend.yml down",
+    "frontend:up": "docker compose -f docker-compose.frontend.yml up -d",
+    "frontend:down": "docker compose -f docker-compose.frontend.yml down",
+    "mobile:up": "docker compose -f docker-compose.mobile.yml up -d",
+    "mobile:down": "docker compose -f docker-compose.mobile.yml down",
+    "logs": "powershell -Command Get-ChildItem ./.github/logs"
+  }
+}
+

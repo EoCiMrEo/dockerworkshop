@@ -1,0 +1,29 @@
+{
+  "name": "todo-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "main": "expo/AppEntry",
+  "scripts": {
+    "start": "expo start --lan --non-interactive",
+    "android": "expo start --android --non-interactive",
+    "web": "expo start --web --non-interactive",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "expo": "~52.0.19",
+    "expo-status-bar": "~2.0.1",
+    "react": "18.3.1",
+    "react-native": "0.76.5"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "^13.0.0",
+    "@types/jest": "^29.5.14",
+    "@types/react": "~18.3.12",
+    "jest": "^29.7.0",
+    "jest-expo": "~52.0.3",
+    "react-test-renderer": "18.3.1",
+    "typescript": "^5.7.2"
+  }
+}
+
