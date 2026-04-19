@@ -1,4 +1,5 @@
-﻿services:
+﻿name: todo_frontend
+services:
   frontend:
     build:
       context: ./frontend

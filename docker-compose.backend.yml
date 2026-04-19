@@ -1,4 +1,5 @@
-﻿services:
+﻿name: todo_backend
+services:
   db:
     image: postgres:16-alpine
     container_name: todo_db

@@ -1,4 +1,5 @@
-﻿services:
+﻿name: todo_mobile
+services:
   mobile:
     build:
       context: ./mobile
