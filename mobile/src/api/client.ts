@@ -34,8 +34,8 @@ const request = async <T>(path: string, options: RequestOptions = {}): Promise<T
     let message = 'Request failed';
 
     try {
-      const payload = (await response.json()) as { error?: string };
-      message = payload.error ?? message;
+      const payload = (await response.json()) as { error?: string; details?: string[] };
+      message = payload.details?.length ? payload.details.join('\n') : payload.error ?? message;
     }
     catch {
       message = response.statusText || message;

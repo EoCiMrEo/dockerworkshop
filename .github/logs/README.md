@@ -25,6 +25,9 @@ This folder contains detailed build and validation logs for the project.
 7. [2026-04-18-milestone-06-docs-sync.md](./2026-04-18-milestone-06-docs-sync.md)
 - Documentation/logging synchronization after full implementation and runtime validation.
 
+8. [2026-04-19-milestone-07-mobile-auth-validation-debug.md](./2026-04-19-milestone-07-mobile-auth-validation-debug.md)
+- Real-device mobile auth debugging: root cause of generic validation failures, client-side fixes, and regression coverage.
+
 ## Reading Recommendation
 - Start with the Master Retrospective for complete context.
 - Use milestone logs for chronological execution details.

@@ -1,19 +1,12 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View
-} from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ApiError, todoApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { colors } from '../styles/theme';
 import type { Priority, Todo, TodoFilters } from '../types/models';
 import { formatDueDate, normalizeDueDateInput } from '../utils/date';
+import { matchesFilters } from '../utils/todoFilters';
 
 const allPriorities: Priority[] = ['low', 'medium', 'high'];
 
@@ -46,6 +39,18 @@ export const TodoScreen = () => {
   const [editDueDate, setEditDueDate] = useState('');
   const [editPriority, setEditPriority] = useState<Priority>('medium');
 
+  const latestLoadRequestId = useRef(0);
+  const debouncedSearch = useDebouncedValue(filters.search ?? '', 250);
+
+  const effectiveFilters = useMemo<TodoFilters>(
+    () => ({
+      status: filters.status,
+      priority: filters.priority,
+      search: debouncedSearch
+    }),
+    [filters.priority, filters.status, debouncedSearch]
+  );
+
   const runWithAuthRetry = useCallback(
     async <T,>(requester: (token: string) => Promise<T>): Promise<T> => {
       if (!session.accessToken) {
@@ -68,21 +73,37 @@ export const TodoScreen = () => {
   );
 
   const loadTodos = useCallback(async (): Promise<void> => {
+    const requestId = ++latestLoadRequestId.current;
     setError(null);
 
     try {
-      const response = await runWithAuthRetry((token) => todoApi.list(token, filters));
-      setTodos(response.items);
+      const response = await runWithAuthRetry((token) => todoApi.list(token, effectiveFilters));
+
+      if (requestId === latestLoadRequestId.current) {
+        setTodos(response.items);
+      }
     }
     catch (loadError) {
-      const message = loadError instanceof Error ? loadError.message : 'Failed to load todos';
-      setError(message);
+      if (requestId === latestLoadRequestId.current) {
+        const message = loadError instanceof Error ? loadError.message : 'Failed to load todos';
+        setError(message);
+      }
     }
-  }, [filters, runWithAuthRetry]);
+  }, [effectiveFilters, runWithAuthRetry]);
 
   useEffect(() => {
+    let active = true;
     setLoading(true);
-    void loadTodos().finally(() => setLoading(false));
+
+    void loadTodos().finally(() => {
+      if (active) {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
   }, [loadTodos]);
 
   const onRefresh = async (): Promise<void> => {
@@ -90,6 +111,21 @@ export const TodoScreen = () => {
     await loadTodos();
     setRefreshing(false);
   };
+
+  const upsertTodoInList = useCallback(
+    (updatedTodo: Todo): void => {
+      setTodos((current) => {
+        const withoutCurrent = current.filter((item) => item.id !== updatedTodo.id);
+
+        if (!matchesFilters(updatedTodo, effectiveFilters)) {
+          return withoutCurrent;
+        }
+
+        return [updatedTodo, ...withoutCurrent];
+      });
+    },
+    [effectiveFilters]
+  );
 
   const createTodo = async (): Promise<void> => {
     if (!title.trim()) {
@@ -99,7 +135,7 @@ export const TodoScreen = () => {
     setError(null);
 
     try {
-      await runWithAuthRetry((token) =>
+      const created = await runWithAuthRetry((token) =>
         todoApi.create(token, {
           title: title.trim(),
           description: description.trim() ? description.trim() : null,
@@ -113,7 +149,7 @@ export const TodoScreen = () => {
       setDescription('');
       setDueDate('');
       setPriority('medium');
-      await loadTodos();
+      upsertTodoInList(created);
     }
     catch (createError) {
       const message = createError instanceof Error ? createError.message : 'Failed to create todo';
@@ -123,8 +159,8 @@ export const TodoScreen = () => {
 
   const toggleTodo = async (todo: Todo): Promise<void> => {
     try {
-      await runWithAuthRetry((token) => todoApi.update(token, todo.id, { completed: !todo.completed }));
-      await loadTodos();
+      const updated = await runWithAuthRetry((token) => todoApi.update(token, todo.id, { completed: !todo.completed }));
+      upsertTodoInList(updated);
     }
     catch (toggleError) {
       const message = toggleError instanceof Error ? toggleError.message : 'Failed to update todo';
@@ -134,8 +170,10 @@ export const TodoScreen = () => {
 
   const cycleTodoPriority = async (todo: Todo): Promise<void> => {
     try {
-      await runWithAuthRetry((token) => todoApi.update(token, todo.id, { priority: nextPriority(todo.priority) }));
-      await loadTodos();
+      const updated = await runWithAuthRetry((token) =>
+        todoApi.update(token, todo.id, { priority: nextPriority(todo.priority) })
+      );
+      upsertTodoInList(updated);
     }
     catch (priorityError) {
       const message = priorityError instanceof Error ? priorityError.message : 'Failed to update priority';
@@ -144,11 +182,14 @@ export const TodoScreen = () => {
   };
 
   const deleteTodo = async (todoId: string): Promise<void> => {
+    const snapshot = todos;
+    setTodos((current) => current.filter((item) => item.id !== todoId));
+
     try {
       await runWithAuthRetry((token) => todoApi.remove(token, todoId));
-      await loadTodos();
     }
     catch (deleteError) {
+      setTodos(snapshot);
       const message = deleteError instanceof Error ? deleteError.message : 'Failed to delete todo';
       setError(message);
     }
@@ -168,7 +209,7 @@ export const TodoScreen = () => {
     }
 
     try {
-      await runWithAuthRetry((token) =>
+      const updated = await runWithAuthRetry((token) =>
         todoApi.update(token, editingId, {
           title: editTitle.trim(),
           description: editDescription.trim() ? editDescription.trim() : null,
@@ -176,8 +217,9 @@ export const TodoScreen = () => {
           priority: editPriority
         })
       );
+
       setEditingId(null);
-      await loadTodos();
+      upsertTodoInList(updated);
     }
     catch (updateError) {
       const message = updateError instanceof Error ? updateError.message : 'Failed to save todo';
@@ -196,93 +238,100 @@ export const TodoScreen = () => {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Todo Flight Deck</Text>
-          <Text style={styles.subtitle}>@{session.user?.username}</Text>
-        </View>
-        <Pressable style={styles.logoutButton} onPress={() => void logout()}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.statsRow}>
-        <Text style={styles.statBox}>Total: {stats.total}</Text>
-        <Text style={styles.statBox}>Active: {stats.active}</Text>
-        <Text style={styles.statBox}>Done: {stats.completed}</Text>
-      </View>
-
-      <ScrollView style={styles.composer} keyboardShouldPersistTaps="handled">
-        <TextInput
-          style={styles.input}
-          placeholder="Todo title"
-          placeholderTextColor={colors.muted}
-          value={title}
-          onChangeText={setTitle}
-        />
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Description"
-          placeholderTextColor={colors.muted}
-          value={description}
-          onChangeText={setDescription}
-          multiline
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Due date (e.g. 2026-04-21T17:30)"
-          placeholderTextColor={colors.muted}
-          value={dueDate}
-          onChangeText={setDueDate}
-        />
-        <Pressable style={styles.secondaryButton} onPress={() => setPriority(nextPriority(priority))}>
-          <Text style={styles.secondaryButtonText}>Priority: {priority}</Text>
-        </Pressable>
-        <Pressable style={styles.primaryButton} onPress={() => void createTodo()}>
-          <Text style={styles.primaryButtonText}>Add Todo</Text>
-        </Pressable>
-
-        <View style={styles.filtersRow}>
-          {(['all', 'active', 'completed'] as const).map((status) => (
-            <Pressable
-              key={status}
-              style={[styles.filterButton, filters.status === status && styles.filterButtonActive]}
-              onPress={() => setFilters((current) => ({ ...current, status }))}
-            >
-              <Text style={styles.filterButtonText}>{status}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Search todos"
-          placeholderTextColor={colors.muted}
-          value={filters.search}
-          onChangeText={(value) => setFilters((current) => ({ ...current, search: value }))}
-        />
-
-        <Pressable
-          style={styles.secondaryButton}
-          onPress={() =>
-            setFilters((current) => ({
-              ...current,
-              priority: current.priority ? nextPriority(current.priority) : 'low'
-            }))
-          }
-        >
-          <Text style={styles.secondaryButtonText}>Filter priority: {filters.priority ?? 'all'}</Text>
-        </Pressable>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-      </ScrollView>
-
       <FlatList
-        style={styles.list}
         data={todos}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={colors.accent} />}
-        ListEmptyComponent={!loading ? <Text style={styles.empty}>No todos found.</Text> : null}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={colors.accent} />
+        }
+        ListHeaderComponent={
+          <>
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.title}>Todo Flight Deck</Text>
+                <Text style={styles.subtitle}>@{session.user?.username}</Text>
+              </View>
+              <Pressable style={styles.logoutButton} onPress={() => void logout()}>
+                <Text style={styles.logoutText}>Logout</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.statsRow}>
+              <Text style={styles.statBox}>Total: {stats.total}</Text>
+              <Text style={styles.statBox}>Active: {stats.active}</Text>
+              <Text style={styles.statBox}>Done: {stats.completed}</Text>
+            </View>
+
+            <View style={styles.composer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Todo title"
+                placeholderTextColor={colors.muted}
+                value={title}
+                onChangeText={setTitle}
+              />
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Description"
+                placeholderTextColor={colors.muted}
+                value={description}
+                onChangeText={setDescription}
+                multiline
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Due date (e.g. 2026-04-21T17:30)"
+                placeholderTextColor={colors.muted}
+                value={dueDate}
+                onChangeText={setDueDate}
+              />
+              <Pressable style={styles.secondaryButton} onPress={() => setPriority(nextPriority(priority))}>
+                <Text style={styles.secondaryButtonText}>Priority: {priority}</Text>
+              </Pressable>
+              <Pressable style={styles.primaryButton} onPress={() => void createTodo()}>
+                <Text style={styles.primaryButtonText}>Add Todo</Text>
+              </Pressable>
+
+              <View style={styles.filtersRow}>
+                {(['all', 'active', 'completed'] as const).map((status) => (
+                  <Pressable
+                    key={status}
+                    style={[styles.filterButton, filters.status === status && styles.filterButtonActive]}
+                    onPress={() => setFilters((current) => ({ ...current, status }))}
+                  >
+                    <Text style={styles.filterButtonText}>{status}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Search todos"
+                placeholderTextColor={colors.muted}
+                value={filters.search}
+                onChangeText={(value) => setFilters((current) => ({ ...current, search: value }))}
+              />
+
+              <Pressable
+                style={styles.secondaryButton}
+                onPress={() =>
+                  setFilters((current) => ({
+                    ...current,
+                    priority: current.priority ? nextPriority(current.priority) : 'low'
+                  }))
+                }
+              >
+                <Text style={styles.secondaryButtonText}>Filter priority: {filters.priority ?? 'all'}</Text>
+              </Pressable>
+
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+            </View>
+          </>
+        }
+        ListEmptyComponent={
+          <Text style={styles.empty}>{loading ? 'Loading todos...' : 'No todos found for this filter.'}</Text>
+        }
         renderItem={({ item }) => (
           <View style={styles.todoCard}>
             <Pressable onPress={() => void toggleTodo(item)}>
@@ -344,8 +393,11 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: 48,
     paddingHorizontal: 14
+  },
+  listContent: {
+    paddingTop: 14,
+    paddingBottom: 16
   },
   header: {
     flexDirection: 'row',
@@ -387,7 +439,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface
   },
   composer: {
-    maxHeight: 320,
     marginTop: 12,
     padding: 12,
     borderRadius: 14,
@@ -486,10 +537,6 @@ const styles = StyleSheet.create({
     color: colors.danger,
     marginBottom: 8
   },
-  list: {
-    marginTop: 12,
-    marginBottom: 8
-  },
   empty: {
     color: colors.muted,
     textAlign: 'center',
@@ -500,7 +547,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
-    marginBottom: 10,
+    marginTop: 10,
     backgroundColor: colors.surface
   },
   todoTitle: {

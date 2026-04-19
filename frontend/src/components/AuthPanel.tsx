@@ -1,5 +1,6 @@
 ﻿import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { normalizeUsername, validateCredentialsInput } from '../utils/authValidation';
 
 export const AuthPanel = () => {
   const { login, register } = useAuth();
@@ -11,15 +12,24 @@ export const AuthPanel = () => {
 
   const submit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
+    const validationError = validateCredentialsInput(username, password);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setError(null);
     setLoading(true);
 
     try {
+      const normalizedUsername = normalizeUsername(username);
+
       if (mode === 'login') {
-        await login(username, password);
+        await login(normalizedUsername, password);
       }
       else {
-        await register(username, password);
+        await register(normalizedUsername, password);
       }
     }
     catch (submissionError) {
